@@ -3,65 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusAI Studio Local</title>
+    <title>NexusAI Studio Python</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4">
     
     <div class="max-w-xl w-full bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
-        <h1 class="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">NexusAI Studio</h1>
-        <p class="text-gray-400 text-sm mb-6">Generador local con Python y Flask, vro.</p>
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">NexusAI Python Server</h1>
+            <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-1 rounded-full font-medium">Flask Activo</span>
+        </div>
+        <p class="text-gray-400 text-sm mb-6">Generador controlado desde tu servidor local de Python, vro.</p>
         
-        <textarea id="promptInput" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 mb-4" placeholder="Escribe tu prompt aquí... (ej. Un personaje con cuerpo humano y cabeza de manzana, 3D)"></textarea>
+        <!-- Input de Prompt -->
+        <div class="mb-4">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Prompt / Descripción</label>
+            <textarea id="promptInput" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 text-gray-100 placeholder-gray-600" placeholder="Ej. Un personaje con cuerpo humano y cabeza de manzana, estilo 3D..."></textarea>
+        </div>
+
+        <!-- Selector de Estilos -->
+        <div class="mb-6">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Estilo Artístico</label>
+            <select id="styleSelect" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 text-gray-300">
+                <option value="3d render, blender, unreal engine 5, detailed lighting">Modelado 3D / Render</option>
+                <option value="cyberpunk digital art, neon lights, highly detailed">Cyberpunk / Neón</option>
+                <option value="anime style, vibrant colors, clean lines">Anime / Manga</option>
+                <option value="photorealistic, 8k, cinematic lighting">Fotorrealista</option>
+                <option value="pixel art, 16-bit retro style">Pixel Art</option>
+            </select>
+        </div>
         
-        <button onclick="generarImagen()" id="btnGenerar" class="w-full bg-indigo-600 hover:bg-indigo-500 transition font-medium py-3 rounded-xl mb-6 shadow-lg shadow-indigo-600/20">
-            Generar Imagen
+        <!-- Botón de Generar -->
+        <button onclick="generarImagen()" id="btnGenerar" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition font-medium py-3 rounded-xl mb-6 shadow-lg shadow-indigo-600/20 text-white">
+            ✨ Generar con Python
         </button>
 
-        <div id="resultado" class="hidden flex flex-col items-center">
-            <div class="relative rounded-xl overflow-hidden border border-gray-800 mb-4 bg-gray-950 w-full flex justify-center">
-                <img id="imagenGenerada" class="max-h-80 object-contain" alt="Imagen generada">
+        <!-- Contenedor del Resultado (Abajo) -->
+        <div id="resultado" class="hidden flex flex-col items-center border-t border-gray-800 pt-6">
+            <div id="loader" class="flex flex-col items-center py-6">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mb-3"></div>
+                <p class="text-sm text-gray-400">Procesando en el servidor de Python...</p>
             </div>
-            <a id="btnDescargar" download="imagen_ia.png" class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2 rounded-lg transition font-medium">
-                📥 Descargar Imagen
-            </a>
+
+            <div id="imagenContainer" class="hidden w-full flex flex-col items-center">
+                <div class="relative rounded-xl overflow-hidden border border-gray-800 mb-4 bg-gray-950 w-full flex justify-center shadow-lg">
+                    <img id="imagenGenerada" class="max-h-96 w-auto object-contain rounded-lg" alt="Imagen generada por IA">
+                </div>
+                <div class="flex gap-3 w-full">
+                    <a id="btnDescargar" download="nexusai_python.png" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-500 text-sm py-2.5 rounded-xl transition font-medium shadow-md shadow-indigo-600/20">
+                        📥 Descargar Imagen
+                    </a>
+                    <button onclick="generarImagen()" class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2.5 rounded-xl transition font-medium">
+                        🔄 Otra variante
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         async function generarImagen() {
-            const prompt = document.getElementById('promptInput').value;
+            const prompt = document.getElementById('promptInput').value.trim();
+            const estilo = document.getElementById('styleSelect').value;
             const btn = document.getElementById('btnGenerar');
             const resultado = document.getElementById('resultado');
+            const loader = document.getElementById('loader');
+            const imagenContainer = document.getElementById('imagenContainer');
             const img = document.getElementById('imagenGenerada');
             const descargar = document.getElementById('btnDescargar');
 
-            if (!prompt) return alert("Escribe algo, manito.");
+            if (!prompt) {
+                alert("Escribe una descripción primero, manito.");
+                return;
+            }
 
-            btn.innerText = "Generando magia...";
             btn.disabled = true;
-            resultado.classList.add('hidden');
+            btn.innerText = "Generando...";
+            resultado.classList.remove('hidden');
+            loader.classList.remove('hidden');
+            imagenContainer.classList.add('hidden');
 
             try {
                 const response = await fetch('/generar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt, estilo })
                 });
 
-                if (!response.ok) throw new Error("Error en el servidor");
+                const data = await response.json();
 
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                
-                img.src = url;
-                descargar.href = url;
-                resultado.classList.remove('hidden');
+                if (data.success) {
+                    img.src = data.image_url;
+                    descargar.href = data.image_url;
+                    loader.classList.add('hidden');
+                    imagenContainer.classList.remove('hidden');
+                } else {
+                    alert("Error: " + data.error);
+                    loader.classList.add('hidden');
+                }
             } catch (error) {
-                alert("Hubo un fallo al generar la imagen.");
+                alert("Hubo un fallo de conexión con el servidor.");
+                loader.classList.add('hidden');
             } finally {
-                btn.innerText = "Generar Imagen";
                 btn.disabled = false;
+                btn.innerText = "✨ Generar con Python";
             }
         }
     </script>

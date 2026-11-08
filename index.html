@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusAI Studio Local</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4">
+    
+    <div class="max-w-xl w-full bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+        <h1 class="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">NexusAI Studio</h1>
+        <p class="text-gray-400 text-sm mb-6">Generador local con Python y Flask, vro.</p>
+        
+        <textarea id="promptInput" rows="3" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 mb-4" placeholder="Escribe tu prompt aquí... (ej. Un personaje con cuerpo humano y cabeza de manzana, 3D)"></textarea>
+        
+        <button onclick="generarImagen()" id="btnGenerar" class="w-full bg-indigo-600 hover:bg-indigo-500 transition font-medium py-3 rounded-xl mb-6 shadow-lg shadow-indigo-600/20">
+            Generar Imagen
+        </button>
+
+        <div id="resultado" class="hidden flex flex-col items-center">
+            <div class="relative rounded-xl overflow-hidden border border-gray-800 mb-4 bg-gray-950 w-full flex justify-center">
+                <img id="imagenGenerada" class="max-h-80 object-contain" alt="Imagen generada">
+            </div>
+            <a id="btnDescargar" download="imagen_ia.png" class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2 rounded-lg transition font-medium">
+                📥 Descargar Imagen
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function generarImagen() {
+            const prompt = document.getElementById('promptInput').value;
+            const btn = document.getElementById('btnGenerar');
+            const resultado = document.getElementById('resultado');
+            const img = document.getElementById('imagenGenerada');
+            const descargar = document.getElementById('btnDescargar');
+
+            if (!prompt) return alert("Escribe algo, manito.");
+
+            btn.innerText = "Generando magia...";
+            btn.disabled = true;
+            resultado.classList.add('hidden');
+
+            try {
+                const response = await fetch('/generar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!response.ok) throw new Error("Error en el servidor");
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                img.src = url;
+                descargar.href = url;
+                resultado.classList.remove('hidden');
+            } catch (error) {
+                alert("Hubo un fallo al generar la imagen.");
+            } finally {
+                btn.innerText = "Generar Imagen";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

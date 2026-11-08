@@ -1,12 +1,7 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, jsonify
 import requests
-import io
 
 app = Flask(__name__)
-
-# API gratuita de Hugging Face para Stable Diffusion XL
-API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
-HEADERS = {"Authorization": "Bearer TU_TOKEN_DE_HUGGINGFACE"}
 
 @app.route("/")
 def index():
@@ -15,15 +10,27 @@ def index():
 @app.route("/generar", methods=["POST"])
 def generar():
     data = request.json
-    prompt = data.get("prompt", "")
+    prompt_base = data.get("prompt", "")
+    estilo = data.get("estilo", "")
     
-    payload = {"inputs": prompt}
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
+    # Combinamos el prompt con el estilo seleccionado
+    prompt_completo = f"{prompt_base}, {estilo}" if estilo else prompt_base
     
-    if response.status_code == 200:
-        return response.content, 200, {"Content-Type": "image/png"}
-    else:
-        return {"error": "No se pudo generar la imagen, checa tu token o espera un momento."}, 500
+    # URL de la API pública optimizada para backend de Python
+    api_url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt_completo)}?width=1024&height=1024&nologo=true"
+    
+    try:
+        # Hacemos la petición desde Python hacia el servicio de generación
+        response = requests.get(api_url)
+        
+        if response.status_code == 200:
+            # Retornamos directamente la URL de la imagen generada al frontend
+            return jsonify({"success": True, "image_url": api_url})
+        else:
+            return jsonify({"success": False, "error": "No se pudo generar la imagen."}), 500
+            
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

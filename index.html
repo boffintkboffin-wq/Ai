@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusAI Studio Python</title>
+    <title>NexusAI Studio Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4">
     
     <div class="max-w-xl w-full bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
         <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">NexusAI Python Server</h1>
-            <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-1 rounded-full font-medium">Flask Activo</span>
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">NexusAI Studio Pro</h1>
+            <span class="text-xs bg-purple-950 text-purple-300 border border-purple-800 px-2.5 py-1 rounded-full font-medium">Online v3.0</span>
         </div>
-        <p class="text-gray-400 text-sm mb-6">Generador controlado desde tu servidor local de Python, vro.</p>
+        <p class="text-gray-400 text-sm mb-6">Generador de imágenes directo en la web, vro. Sin servidores caídos.</p>
         
         <!-- Input de Prompt -->
         <div class="mb-4">
@@ -35,14 +35,14 @@
         
         <!-- Botón de Generar -->
         <button onclick="generarImagen()" id="btnGenerar" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition font-medium py-3 rounded-xl mb-6 shadow-lg shadow-indigo-600/20 text-white">
-            ✨ Generar con Python
+            ✨ Generar Imagen IA
         </button>
 
         <!-- Contenedor del Resultado (Abajo) -->
         <div id="resultado" class="hidden flex flex-col items-center border-t border-gray-800 pt-6">
-            <div id="loader" class="flex flex-col items-center py-6">
+            <div id="loader" class="flex flex-col items-center py6">
                 <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mb-3"></div>
-                <p class="text-sm text-gray-400">Procesando en el servidor de Python...</p>
+                <p class="text-sm text-gray-400">Creando tu imagen, manito...</p>
             </div>
 
             <div id="imagenContainer" class="hidden w-full flex flex-col items-center">
@@ -50,7 +50,7 @@
                     <img id="imagenGenerada" class="max-h-96 w-auto object-contain rounded-lg" alt="Imagen generada por IA">
                 </div>
                 <div class="flex gap-3 w-full">
-                    <a id="btnDescargar" download="nexusai_python.png" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-500 text-sm py-2.5 rounded-xl transition font-medium shadow-md shadow-indigo-600/20">
+                    <a id="btnDescargar" download="nexusai_imagen.png" class="flex-1 text-center bg-indigo-600 hover:bg-indigo-500 text-sm py-2.5 rounded-xl transition font-medium shadow-md shadow-indigo-600/20">
                         📥 Descargar Imagen
                     </a>
                     <button onclick="generarImagen()" class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2.5 rounded-xl transition font-medium">
@@ -62,8 +62,8 @@
     </div>
 
     <script>
-        async function generarImagen() {
-            const prompt = document.getElementById('promptInput').value.trim();
+        function generarImagen() {
+            const promptBase = document.getElementById('promptInput').value.trim();
             const estilo = document.getElementById('styleSelect').value;
             const btn = document.getElementById('btnGenerar');
             const resultado = document.getElementById('resultado');
@@ -72,10 +72,14 @@
             const img = document.getElementById('imagenGenerada');
             const descargar = document.getElementById('btnDescargar');
 
-            if (!prompt) {
+            if (!promptBase) {
                 alert("Escribe una descripción primero, manito.");
                 return;
             }
+
+            const promptCompleto = `${promptBase}, ${estilo}`;
+            const seed = Math.floor(Math.random() * 1000000);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptCompleto)}?seed=${seed}&width=1024&height=1024&nologo=true`;
 
             btn.disabled = true;
             btn.innerText = "Generando...";
@@ -83,31 +87,24 @@
             loader.classList.remove('hidden');
             imagenContainer.classList.add('hidden');
 
-            try {
-                const response = await fetch('/generar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, estilo })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    img.src = data.image_url;
-                    descargar.href = data.image_url;
-                    loader.classList.add('hidden');
-                    imagenContainer.classList.remove('hidden');
-                } else {
-                    alert("Error: " + data.error);
-                    loader.classList.add('hidden');
-                }
-            } catch (error) {
-                alert("Hubo un fallo de conexión con el servidor.");
+            const tempImg = new Image();
+            tempImg.src = imageUrl;
+            
+            tempImg.onload = () => {
+                img.src = imageUrl;
+                descargar.href = imageUrl;
                 loader.classList.add('hidden');
-            } finally {
+                imagenContainer.classList.remove('hidden');
                 btn.disabled = false;
-                btn.innerText = "✨ Generar con Python";
-            }
+                btn.innerText = "✨ Generar Imagen IA";
+            };
+
+            tempImg.onerror = () => {
+                alert("Hubo un fallo al generar la imagen. Inténtalo de nuevo.");
+                loader.classList.add('hidden');
+                btn.disabled = false;
+                btn.innerText = "✨ Generar Imagen IA";
+            };
         }
     </script>
 </body>
